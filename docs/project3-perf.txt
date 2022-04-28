@@ -1,0 +1,11 @@
+Theory - We think that cache-ing the dependencies for each cell will speed up evaluation
+Rationale - In one of our profile tests, 20% of the time was spent calculating dependencies
+Outcome - After we cache'd the dependencies, we had an approximate 20% speedup.
+
+Theory - We can recompute only the values on the subgraph that is reachable by the transpose
+         dependenchy graph in the case on a simple set_cell_contents call for speed improvements.
+Rationale - In our profile tests, 80% of the time was spent in set_cell_contents even in simple
+            cases that should be fast.
+Outcome - After adding a 'reachable' function to graph, and simplifying the transverse dependency
+         graph before recomputing, we had an approximate 80% speedup.
+

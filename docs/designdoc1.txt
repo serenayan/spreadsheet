@@ -1,0 +1,226 @@
+CS130 Project 1 - Design Document
+=================================
+
+Please answer all questions in this design document.  Note that the final
+feedback section is optional, and you are not required to answer it if you
+don't want to.
+
+Unanswered or incompletely answered questions, or answers that don't actually
+match the code/repository, will result in deductions.
+
+Answers don't have to be deeply detailed!  We are mainly looking for an
+overview or summary description of how your project works, and your team's
+experiences working on this project.
+
+Logistics (7 pts)
+------------------
+
+L1.  [2pts] Enumerate all teammates here.
+Thomas Barrett, Riley O'Neil, Serena Yan
+
+
+L2.  [2pts] What did each teammate focus on during this project?
+Thomas: Implementation of the Cell and Workbook class.
+Riley: Implemention of Spreadsheet class.
+Serena: Implementation of Graph algorithms used for cycle detection and update.
+
+L3.  [3pts] Approximately how many hours did each teammate spend on the project?
+Thomas: 12
+Riley: 10
+Serena: 8
+
+Spreadsheet Engine Design (20 pts)
+----------------------------------
+
+D1.  [3pts] Describe the high-level design abstractions (e.g. classes and/or
+     submodules) in your spreadsheet engine, and what purposes these various
+     abstractions fulfill.
+
+     Each instance of Workbook contains multiple instances of the Spreadsheet class, which
+     in turn contains multiple instances of the Cell class. 
+
+     Cell is responsible for evaluating its own value, which involves parsing its
+     assignment contents, evaluating formulas, etc.
+
+     Spreadsheet is responsible for creating, deleting, and accessing cells given
+     a cell location in the form ZZZZ9999, as well as computing spreadsheet specific
+     information such as extent etc.
+
+     Workbook is responsible for forwarding most of its methods to the appropriate instance
+     of Spreadsheet. It also is responsible for the computation of workbook wide operations,
+     such as cycle detection and value propogation.
+     
+     Since Workbook is the only class that can access the value of any Cell, but Cell
+     is responsible for computing its own value (possible by referencing the value of
+     other cells) we also pass a functional argument from workbook to Cell that allows
+     Cell to query the value of any Cell in the Workbook. 
+     
+     Besides the Workbook -> Spreadsheet -> Cell datastucture, we also defined 
+     utility classes such as Graph (which is responsble for computing graph algorithms
+     such as topological_sort, etc.
+
+D2.  [4pts] Why did you choose the design you chose?  Describe other designs
+     (or perhaps earlier versions of the above design) that you considered,
+     and why you ended up not using them.
+
+     We chose to seperate our code into Workbook, Spreadsheet, and Cell to "hopefully" improve
+     extensibility in future sets. Since Workbook, Spreadsheet, and Cell all have a clearly defined
+     interface that doesn't depend on their specific implementation, we should be able to change
+     any of their behaviors and add features without breaking too much.
+     
+     Initially, we were going to have the Cell class maintain a list of its neighbors
+     and use the set of Cell objects as an implicit graph data structure. That turned out to
+     be kind of messy and confusing, so we ended up writing a seperate Graph class. We are
+     much happier with this decision.
+
+D3.  [4pts] At a high level (e.g. pseudocode or higher), enumerate the steps
+     that your spreadsheet engine goes through when a caller sets a cell's
+     contents.
+
+     1. Workbook retrieves the Spreadsheet to be updated or raises an error if it
+        does not exist. Worksbook instructs Spreadsheet to set the contents of the
+        cell at the given location.
+        
+     2. Spreadsheet checks if the contents is empty or None. If so, it deletes the
+        Cell as the given location. Otherwise, it creates a new Cell at the given
+        location.
+        
+     3. Workbook constructs a Graph data structure composed of all Cells in all
+        spreadsheets.
+        
+     4. Workbook uses the Graph to compute the set of connected components. All Cells
+        in a connected component of size greater than one are in a cycle. These
+        cells are marked with a value of CYCLICAL_REFERENCE_ERROR. 
+     
+     5. Workbook computes a sub-graph containing only vertices that are not in a cycle.
+        This sub-graph is a DAG. The vertices in the DAG are sorted topologically. 
+        and the cells are asked to compute their value in order.
+        
+D4.  [3pts] How does your spreadsheet engine identify what other cells need
+     updating when a cell's contents are changed, and what order to update them?
+
+     The spreadsheet engine avoids this problem entirely by simply recomputing
+     the value of every cell when any cell's contents change. Oh the simpliciy!
+     The update order is determined by a topological sort of the vertices of the
+     maximal non-cyclical subgraph of the reference graph.
+     
+D5.  [3pts] How does your spreadsheet engine identify cycles between cells when
+     a cell update is performed?  Are cells in a cycle processed any differently
+     from other cells outside of the cycle?
+
+     The cell class itself is responsible for determining if it contains a self-cycle.
+     More specifically, if the Cell contains a formula that directly references itself,
+     the formula is evaluated to CYCLICAL_REFERENCE_ERROR.
+     
+     The spreadsheet engine identifies cycles between cells by computing strongly
+     connected components using Kosaraju Algorithm. Any cell in a stronly connected
+     component with 2 or more vertices participates in a cycle.
+     
+     All cells in a cycle have their value manually set to CYCLICAL_REFERENCE_ERROR.
+     All cells that reference the cycle compute their own value normally. The
+     CYCLICAL_REFERENCE_ERROR propogates through these cells just like any other
+     error.
+     
+D6.  [3pts] What steps does your spreadsheet engine go through when a sheet is
+     deleted from a workbook?  How does it identify cells that may be affected
+     by the sheet-deletion?
+
+     When a sheet is deleted from the workbook, it performs the entire cycle detection
+     and topological sort process described above for the entire reference graph.
+     This ensures that any cell that references any cell in the deleted workbook are
+     recomputed. 
+     
+Implementation Process (23 pts)
+-------------------------------
+
+P1.  [4pts] How did your team break down and keep track of the various tasks to
+     complete for this project?  Did you use the GitHub issue tracker, or some
+     other system like Trello, or some other tool?
+     
+     Honestly, our team kind of just mentally kept track of what had been accomplished
+     so far. We saw the shortcomings of during the second week when we were close to
+     completion and had to brainstorm possible features and edge cases that we were
+     missing. We will try to improve on this next week.
+     
+P2.  [4pts] How did you assign tasks to teammates?  Did you stick with your
+     task-assignments through the project, or did you shift around tasks as the
+     project progressed?  Why?
+
+     This week was a little wierd. For the first couple of days, Riley and Thomas
+     were the only two members of the group. Thomas decided to implement Cell and 
+     Riley decided to implement Spreadsheet. When Serena joined a few days later,
+     much of Workbook, Spreadsheet, and Cell were already implemented. Since it was
+     the only thing left, Serena was responsible for figuring out how to implement
+     cycle detection. Thomas helped construct a method within Workbook to construct
+     a graph data structure that was decoupled from the rest of the codebase. Serena
+     then used this data structure to implement algorithms necessary for cycle 
+     detection.
+
+P3.  [4pts] How would you characterize the quality of your project testing?
+     Make sure to touch on these items:  Is it automated?  Is it easy for
+     teammates to run?  Is it fast?  Is it reasonably complete?
+
+     Our unit testing for Cell is very solid, with 100% reported test coverage.
+     Our tests for Workbook and Spreadsheet are integration tests rather than
+     unit tests because we haven't found a good way to mock the dependencies of
+     Workbook and Spreadsheet yet. The tests are automated: the Github Action
+     runner runs all tests upon every commit. The repository also contains VS Code
+     config files that allow us to easily run all tests with the built-in VS Code
+     test runner.
+     
+P4.  [3pts] What mechanisms did your team use for communication during the
+     project?  Did you find them to be effective?  What issues did you
+     encounter, if any?
+
+     We primarily used Messenger to communicate. We also used the Github comment
+     feature to comment on specifc portions of other peoples code when we noticed
+     bugs or an opportunity for improvement. 
+     
+P5.  [3pts] Did you use any kind of collaborative construction techniques, e.g.
+     code reviews or pair-programming, during the project?  If so, what are your
+     observations about its usefulness?  Did you find it to have any downsides?
+
+     Our team used both code reviews and pair programming. As much as possible,
+     we tried to work in seperate development branches that were merged by another
+     person rather than push code directly to the main branch. However, we were not
+     as strict as we could have been in enforcing rigourous code reviews by all
+     parties before merging code. This did seem to be a pretty good system though.
+     Since Riley and Thomas are roommates, they often worked at the same time and
+     bounced ieas off of each other while programming. 
+     
+P6.  [5pts] What would you like to improve about your team's development
+     process, going forward?
+     
+     While we don't want to hinder the progress of our team, a more structured
+     approach to distributing and notifying each other about tasks would be useful.
+     This would enable all members of the team to be able to follow allong easier
+     with each others progress. While in an corporate environment, we may use a card
+     based task management system such as Jira, for our purposes, a simpler system that
+     could work for our purposes is just to make a checklist of items to be completed.
+     Team members could then self-assign themselves bite-sized tasks and work at their
+     own pace without being blocked by someone else.
+
+
+Section F:  CS130 Project 1 Feedback [OPTIONAL]
+-----------------------------------------------
+
+These questions are OPTIONAL, and you do not need to answer them.  Your grade
+will not be affected by answering or not answering them.  Also, your grade will
+not be affected by negative feedback - we want to know what went poorly so that
+we can improve future versions of the course.
+
+F1.  What parts of the assignment did you find highly enjoyable?  Conversely,
+     what parts of the assignment did you find unenjoyable?
+
+
+F2.  What parts of the assignment helped you learn more about software
+     engineering best-practices, or other useful development skills?
+     What parts were not helpful in learning these skills?
+
+
+F3.  Were there any parts of the assignment that seemed _unnecessarily_ tedious?
+     (Some parts of software development are always tedious, of course.)
+
+
+F4.  Do you have any feedback and/or constructive criticism about how this
+     project can be made better in future iterations of CS130?

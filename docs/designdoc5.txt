@@ -1,0 +1,167 @@
+CS130 Project 5 - Design Document
+=================================
+
+Please answer all questions in this design document.  Note that the final
+feedback section is optional, and you are not required to answer it if you
+don't want to.
+
+Unanswered or incompletely answered questions, or answers that don't actually
+match the code/repository, will result in deductions.
+
+Answers don't have to be deeply detailed!  We are mainly looking for an
+overview or summary description of how your project works, and your team's
+experiences working on this project.
+
+Logistics (7 points)
+--------------------
+
+L1.  [2pts] Enumerate all teammates here.
+    Riley O'Neil
+    Thomas Barrett
+    Serena Yan
+
+L2.  [2pts] What did each teammate focus on during this project?
+     Serena Yan: cell range and sorting and related test
+     Riley: helper functions to cell range and tests for functions and 
+               correct last week's error
+     Thomas: Performance improvements.
+     
+L3.  [3pts] Approximately how many hours did each teammate spend on the project?
+     Serena: 10 hours
+     Riley: 6 hours
+     Thomas: 4 hours
+Spreadsheet Engine Design (27 points)
+-------------------------------------
+
+D1.  [4pts] Briefly describe the changes you made to the Lark parser grammar to
+     support cell-range references.  Can they appear anywhere in expressions, or
+     does your grammar constrain them to appear only in particluar contexts?
+     
+     We didn't have enough time to change the lark file. But we believe that after 
+     the parser grammar is added, all new cell range functions will work properly.
+
+D2.  [4pts] How easy or hard was it to incorporate cell-range references into
+     formula evaluation?  Elaborate on your answer.
+
+     It is not that hard. We have one helper function called cell range to list,
+     which converts the cell range in format "cell_loc:cell_loc" to a flattened list
+     of cell locations in that range. This becomes the argument in all our functions
+     in the formula, which works well with arithmatic operations.
+
+
+D3.  [4pts] How did you incorporate cell-range references into the cycle-
+     detection functionality of your project?  Explain why you chose this design
+     over other possible designs; for example, what benefits were you hoping to
+     achieve, or what issues were you trying to avoid?
+
+     Since we convert the range to list of cells, cycles can be detected as normal.
+     Our previous inplementation already takes care of cycle detection in a list of cells.
+
+
+D4.  [4pts] Give an overview of the structural aspects (modules, classes, etc.)
+     of how you implemented sorting.  Do you sort the rows directly?  Do you
+     use proxy objects instead?  Some other technique?
+
+     We sort the index of the rows instead of the actual rows to avoid _unnecessary 
+     operations. At the end, we just update the cell contents based on the sorted index.
+
+
+D5.  [4pts] Give an overview of the behavioral aspects of how you implemented
+     sorting.  At a high level, enumerate the steps that your engine goes
+     through to sort a region of a spreadsheet.
+
+     We used numpy's lexsort function, which is exactly what the sort in this
+     project requires. The algorithm goes through the sort columns in order and
+     sort based on the value of the cells in that column. Rows of equal values
+     are in the same order before the sort, and sorted again on the next sort column.
+
+
+D6.  [4pts] How does your implementation solve the problem of supporting the
+     user-specified row ordering based on both the columns and the ordering to
+     sort by?  Did you create any classes or functions to help specifically with
+     this task?
+
+     We didn't implement this. But if we did, we would create an extra argument called
+     user_ordering and pass that as the lambda key into the sorting algo.
+
+
+D7.  [3pts] Briefly describe the changes you made to your spreadsheet engine to
+     satisfy the stricter cell-change notification behaviors.  Did you find this
+     to be largely straightforward to change?  Why or why not?
+
+     We set the notification at the latest point of the api called, so only 
+     after all changes are made, we check that if a value is changed for a cell,
+     and if it is, we send cell-change notification.
+
+
+Performance Improvement (16 pts)
+--------------------------------
+
+In this project you must improve the performance of operations that involve
+bulk updating of cell formulas and/or values.  In the previous project your
+team should have written some performance-testing code in preparation for this
+effort, and should have run it under a profiler to get an initial sense of
+where improvements can be made.  In this project you need to follow through on
+this setup, and address performance issues in your code.
+
+P1.  [6pts] Give a brief overview of 2-3 of the worst hot-spots you identified
+     in your performance testing and analysis.  For each one, describe how your
+     team was able to resolve it.
+
+     copy sheet is especially slow during the speed test. This is expected as our 
+     copy sheet implementation eventually triggers the call to build dependency
+     graph, which is computationally expensive. Some of the hotspot include calling
+     transpose many times (repeated calls that we can eliminate in the next project)
+     and building dependency graphs many times. Ideally, we should only build
+     dependency graph once each time we copy the sheet.
+
+
+P2.  [4pts] Did your team try anything to address performance issues and find
+     that it didn't improve things at all?  If so, were you able to identify why
+     the intended fix didn't produce the desired benefit?
+
+     We tried some minor changes that we think will improve performance, but it didn't 
+     change much of the speed. Unlike the first round of speed tests, out bulk
+     operations are actually pretty fast.
+     
+     The performance cannot be noticeably better unless we chnage the way we update cells and call
+     build dependencies graph, which involves huge refactoring of the code.
+
+
+P3.  [3pts] How do you feel that your performance updates affected your code's
+     readability and maintainability?  Elaborate on your answer.
+
+     It doesn't affect much.
+
+
+P4.  [3pts] Did your performance updates cause any regressions in functionality?
+     If so, briefly describe any issues that emerged.  How were these issues
+     identified (e.g. automated test failures, manual testing, etc.)?  How
+     quickly were issues identified?
+
+     NO
+
+
+Section F:  CS130 Project 4 Feedback [OPTIONAL]
+-----------------------------------------------
+
+These questions are OPTIONAL, and you do not need to answer them.  Your grade
+will not be affected by answering or not answering them.  Also, your grade will
+not be affected by negative feedback - we want to know what went poorly so that
+we can improve future versions of the course.
+
+F1.  What parts of the assignment did you find highly enjoyable?  Conversely,
+     what parts of the assignment did you find unenjoyable?
+
+
+F2.  What parts of the assignment helped you learn more about software
+     engineering best-practices, or other useful development skills?
+     What parts were not helpful in learning these skills?
+
+
+F3.  Were there any parts of the assignment that seemed _unnecessarily_ tedious?
+     (Some parts of software development are always tedious, of course.)
+
+
+F4.  Do you have any feedback and/or constructive criticism about how this
+     project can be made better in future iterations of CS130?

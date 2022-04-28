@@ -1,0 +1,85 @@
+//=============================================================================
+// Caltech CS130 - Winter 2022
+
+%import common.WS
+%ignore WS
+
+//========================================
+// Top-level formulas and expressions
+
+?formula : "=" expression
+
+?expression : bool_expr
+
+?function_call : IDENTIFIER "(" expr_list? ")"
+
+?expr_list: expression ("," expr_list)?
+
+//========================================
+// Arithmetic expressions
+
+// This generates right-deep trees:  ?add_expr : mul_expr (ADD_OP add_expr)?
+// Instead we would prefer to generate left-deep trees when given a sequence
+// of operators at the same precedence level.
+?bool_expr : (bool_expr BOOL_OP)? concat_expr
+
+?concat_expr : (concat_expr "&")? add_expr
+
+?add_expr : (add_expr ADD_OP)? mul_expr
+
+?mul_expr : (mul_expr MUL_OP)? unary_op
+
+?unary_op : ADD_OP? base
+
+//========================================
+// Base values
+
+?base : cell
+      | ERROR_VALUE                       -> error
+      | NUMBER                            -> number
+      | STRING                            -> string
+      | TRUE                              -> bool
+      | FALSE                             -> bool
+      | "(" expression ")"                -> parens
+      | IDENTIFIER "(" expr_list? ")"     -> function_call
+
+cell : (_sheetname "!")? CELLREF
+
+_sheetname : SHEET_NAME | QUOTED_SHEET_NAME
+
+//========================================
+// Lexer terminals
+
+// Specify the operators as separately named lexer rules so that they aren't
+// discarded from the resulting parse tree.
+
+ADD_OP: ("+" | "-")
+MUL_OP: ("*" | "/")
+BOOL_OP: ("=" | "==" | "<>" | "!=" | ">" | "<" | ">=" | "<=" )
+
+// Error values are also separately named lexer rules so we know what kind of
+// error is referenced.  All are case-insensitive.
+
+ERROR_VALUE: ("#ERROR!"i | "#CIRCREF!"i | "#REF!"i | "#NAME?"i | "#VALUE!"i | "#DIV/0!"i)
+
+// Lexer rules for different kinds of terminals
+
+CELLREF: /\$?[A-Za-z]+\$?[1-9][0-9]*/
+
+// Unquoted sheet names cannot contain spaces, and are otherwise very simple.
+SHEET_NAME: /[A-Za-z_][A-Za-z0-9_]*/
+
+// Quoted sheet names can contain spaces and other interesting characters.  Note
+// that this lexer rule also matches invalid sheet names, but that isn't a big
+// deal here.
+QUOTED_SHEET_NAME: /\'[^']*\'/
+
+// Don't need to support signs on numbers because we have unary +/- operator
+// support in the parser.
+NUMBER: /([0-9]+(\.[0-9]*)?)|(\.[0-9]+)/
+
+STRING: /\"[^"]*\"/
+
+TRUE: /[Tt][Rr][Uu][Ee]/
+FALSE: /[Ff][Aa][Ll][Ss][Ee]/
+IDENTIFIER: /[_a-zA-Z][_a-zA-Z0-9]*/

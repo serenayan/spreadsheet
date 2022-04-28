@@ -1,0 +1,172 @@
+CS130 Project 4 - Design Document
+=================================
+
+Please answer all questions in this design document.  Note that the final
+feedback section is optional, and you are not required to answer it if you
+don't want to.
+
+Unanswered or incompletely answered questions, or answers that don't actually
+match the code/repository, will result in deductions.
+
+Answers don't have to be deeply detailed!  We are mainly looking for an
+overview or summary description of how your project works, and your team's
+experiences working on this project.
+
+Logistics (7 pts)
+-----------------
+
+L1.  [2pts] Enumerate all teammates here.
+    Riley O'Neil
+    Thomas Barrett
+    Serena Yan
+
+L2.  [2pts] What did each teammate focus on during this project?
+     Serena -> Performance analysis and tests for new functions
+     Thomas -> Function implementation
+     Riley -> Unit testing for new functionality and tracked down errors
+              from previous weeks.
+
+L3.  [3pts] Approximately how many hours did each teammate spend on the project?
+     Serena -> 6 hours
+     Thomas -> 12 hours
+     Riley -> 12 hours
+
+Spreadsheet Engine Design (27 pts)
+----------------------------------
+
+D1.  [4pts] Briefly describe the changes you made to the Lark parser grammar to
+     support Boolean literals and conditional expressions.  How did you ensure
+     that conditional expressions are lower precedence than arithmetic and
+     string concatenation operations?
+
+     We added two new 'base' terminals TRUE and FALSE that were defined as case
+     insensitive regualar expressions for true and false respectively. Additionally,
+     we added a new bool_expr non-terminal that was defined similarly to add and
+     mul_expr and was placed as the base expression so that it had lower precedence
+     that mul_expr and add_expr. Also, we redefined concat_expr so that the order
+     of precedence was mul, add, concat, bool.
+
+D2.  [5pts] Briefly describe how function invocation works in your spreadsheet
+     engine.  How easy or hard would it be for you to add new functions to your
+     engine?  What about a third-party developer?  How well does your code
+     follow the Open/Closed Principle?
+
+     When a function call expression is parsed, we look up the function by name
+     in a FunctionRegistry singleton object that maps the function name to the
+     function implementation. It is pretty easy for us to add new functions to
+     our engine, but would be harder for a third party developer. Changes only
+     need to be made in one file, but we do not have any api that allows new
+     functions to be added to the function registry.
+
+D3.  [5pts] Is your implementation able to lazily evaluate the arguments to
+     functions like IF(), CHOOSE() and IFERROR()?  (Recall from the Project 4
+     spec that your spreadsheet engine should not report cycles in cases where
+     an argument to these functions does not need to be evaluated.)  If so,
+     what changes to your design were required to achieve this?  If not, what
+     prevented your team from implementing this?
+
+     The implementation is able to lazily evaluate the arguments, but it is
+     still reports errors in cases where an argument to these functions does
+     not need to be evaluated. This is because the dependency list that is
+     used to calculate circular reference errors is determined statically, and
+     we ran out of time debugging our implementation of dynamic state 
+     dependent dependencies.
+
+D4.  [5pts] Is your implementation able to evaluate the ISERROR() function
+     correctly, with respect to circular-reference errors?  (Recall from the
+     Project 4 spec that ISERROR() behaves differently when part of a cycle,
+     vs. being outside the cycle and referencing some cell in the cycle.)
+     If so, what changes to your design were required to achieve this?  If
+     not, what prevented your team from implementing this?
+
+     Our implementation is able to evaluate the ISERROR function correctly. No
+     changes to our design were needed because circular reference errors
+     propogate just like other errors as long as the cell is not directly part
+     of the cycle.
+
+D5.  [5pts] Is your implementation able to successfully identify cycles that
+     are not evident from static analysis of formulas containing INDIRECT()?
+     If so, what changes to your design were required, if any, to achieve this?
+     If not, what prevented your team from implementing this?
+
+     Our implementation is not able to successfully identity cycles that are
+     not evident from static analysis. Again, we did not have enough time to
+     implement dynamic dependency lists.
+
+D6.  [3pts] Project 4 has a number of small but important operations to
+     implement:  Comparison operations include a number of comparison and type
+     conversion rules.  Different functions may require specific numbers and
+     types of arguments.  How did your team structure the implementation of
+     these operations?  How did your approach affect the reusability and
+     testability of these operations?
+
+     We made this reusbable and testible by added utiliy functions such as
+     value_to_str, value_to_decimal, and value_to_bool that converted any
+     cell value to the intended type, or an error if it was not possible.
+
+Performance Analysis (16 pts)
+-----------------------------
+
+In this project you must measure and analyze the performance of features that
+generate large bulk changes to a workbook:  loading a workbook, copying or
+renaming a sheet, and moving or copying an area of cells.  Construct some
+performance tests to exercise these aspects of your engine, and use a profiler
+to identify where your program is spending the bulk of its time.
+
+A1.  [4pts] Briefly enumerate the performance tests you created to exercise
+     your implementation.
+
+     create_square_workbook_json
+     test_load_workbook_speed
+     test_copy_sheet_speed
+     test_rename_sheet_speed
+     test_move_cells_speed
+     test_copy_cells_speed
+
+
+A2.  [4pts] What profiler did you choose to run your performance tests with?
+     Why?  Give an example of how to invoke one of your tests with the profiler.
+
+     We used the builtin cProfiler because it comes built in to the python
+     library and has lots of documentation and examples about how it should
+     be used. It has lots of useful features including the ability to count
+     how many times each function was called. The tests can be run with the command
+     ```
+     python3 performanceAnalysis.py
+     ```
+
+A3.  [8pts] What are ~3 of the most significant hot-spots you identified in your
+     performance testing?  Did you expect these hot-spots, or were they
+     surprising to you?
+
+     copy sheet is especially slow during the speed test. This is expected as our 
+     copy sheet implementation eventually triggers the call to build dependency
+     graph, which is computationally expensive. Some of the hotspot include calling
+     transpose many times (repeated calls that we can eliminate in the next project)
+     and building dependency graphs many times. Ideally, we should only build
+     dependency graph once each time we copy the sheet.
+
+
+Section F:  CS130 Project 3 Feedback [OPTIONAL]
+-----------------------------------------------
+
+These questions are OPTIONAL, and you do not need to answer them.  Your grade
+will not be affected by answering or not answering them.  Also, your grade will
+not be affected by negative feedback - we want to know what went poorly so that
+we can improve future versions of the course.
+
+F1.  What parts of the assignment did you find highly enjoyable?  Conversely,
+     what parts of the assignment did you find unenjoyable?
+
+
+F2.  What parts of the assignment helped you learn more about software
+     engineering best-practices, or other useful development skills?
+     What parts were not helpful in learning these skills?
+
+
+F3.  Were there any parts of the assignment that seemed _unnecessarily_ tedious?
+     (Some parts of software development are always tedious, of course.)
+
+
+F4.  Do you have any feedback and/or constructive criticism about how this
+     project can be made better in future iterations of CS130?

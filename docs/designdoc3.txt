@@ -1,0 +1,149 @@
+CS130 Project 3 - Design Document
+=================================
+
+Please answer all questions in this design document.  Note that the final
+feedback section is optional, and you are not required to answer it if you
+don't want to.
+
+Unanswered or incompletely answered questions, or answers that don't actually
+match the code/repository, will result in deductions.
+
+Answers don't have to be deeply detailed!  We are mainly looking for an
+overview or summary description of how your project works, and your team's
+experiences working on this project.
+
+Logistics (7 pts)
+-----------------
+
+L1.  [2pts] Enumerate all teammates here.
+
+    Riley O'Neil
+    Thomas Barrett
+    Serena Yan
+
+L2.  [2pts] What did each teammate focus on during this project?
+
+    Thomas -> Copying and moving cells and linting, speed improvements
+    Riley -> Addressing previous testing failures and trying to recreate local tests, speed improvements
+    Serena -> Testing for copying/moving cells and fixed bugs in functions
+
+
+L3.  [3pts] Approximately how many hours did each teammate spend on the project?
+
+    Thomas -> 12 hours
+    Riley -> 8 hours
+    Serena -> 4 hours
+
+Spreadsheet Engine Design (10 pts)
+----------------------------------
+
+D1.  [3pts] Moving and copying regions of a sheet are very similar operations,
+     with only a few differences between them.  How did your team take advantage
+     of the similarity of these two operations to reduce the amount of code
+     required to provide this functionality?
+
+     In spreadsheet there are functions like copy cells, cut cells, and paste cells. 
+     Moving just uses cut and paste while copying uses copy and past. So both used the
+     paste function. Also, cut just calls the copy function and then deletes the cells.
+
+
+D2.  [3pts] Similarly, moving/copying regions of a sheet, and renaming a sheet,
+     both involve formula updates.  Was your team able to factor out common
+     aspects of these two operations to reduce the amount of code required to
+     implement these operations?  If so, what did you do?  If not, why not?
+
+    We did not because we just update everything anyway so it saved a lot of
+    time. This might be an area for future performance improvements.
+
+
+D3.  [4pts] How does your implementation address the challenges of moving or
+     copying a region of cells where the source and target regions overlap?
+
+     Our copy method stores a copy of of cell contents in the range that are 
+     being moved so we don't whave to worry about the data being changed as
+     we copy it.
+
+
+Static Code Analysis / Code Linting (10pts)
+-------------------------------------------
+
+L1.  [3pts] What code linter did your team use on your project?  Was this the
+     first CS130 project in which you used a linter?
+
+     We used pylint and it is the first project were it has been implemented
+
+
+L2.  [3pts] How did you automate the execution of your code linter?  Did
+     everyone in your team find it easy to run?
+
+     The linter can be run locally with `make lint`. Riley is running on Windows,
+     and doesn't have the `make` command installed so he is unable to run the
+     linter. However, we also added the linter to the CI so anyone can see the
+     lint results as part of the Gitlab Actions.
+
+
+L3.  [4pts] Did the use of the linter improve your overall code quality and
+     correctness?  Give some specific details in your answer.  Were there any
+     serious issues you were previously unaware of?
+
+     Yes, we have modified our Gtihub repository to require all tests 
+     and the linter to pass before branches can be merged to main. Also, a
+     code reviewer must approve changes. There were no major issues identified
+     by the linter. Our changes were mostly style related.
+
+
+Performance Improvement (23 pts)
+--------------------------------
+
+In this project you must improve the performance of two central areas of your
+spreadsheet engine - cell updating and cycle detection.  In the previous project
+your team should have written some performance-testing code in preparation for
+this effort, and should have run it under a profiler to get an initial sense of
+where improvements can be made.  In this project you need to follow through on
+this setup, and address performance issues in your code.
+
+P1.  [9pts] Give a brief overview of 3-4 of the worst hot-spots you identified
+     in your performance testing and analysis.  For each one, describe how your
+     team was able to resolve it.
+
+     The first hotspot resolved (actually resolved last week) was that we were
+     reconstructing the Lark parser very often (every time Cell created, updated,
+     etc.). This was very very slow since it required actually reading the Lark
+     file. We fixed this by caching the Lark parser so that it was only created
+     once.
+
+     The second hotspot was that we were using a lark visitor to recalculate each
+     cell's dependencies every time any cell content was changed. We fixed this
+     by caching a cell's dependencies and only recomputing when the cell's contents
+     were changed (renaming etc). 
+
+     The third hotspot that was identified is that we were recalculating the value
+     of all cells in the graph even when no other cells depended on it. We fixed
+     this by reducing the size of our dependency graph to only cells reachable
+     from the modified cell before calculating cycles and updating values. 
+
+P2.  [6pts] Did your team try anything to address performance issues and find
+     that it didn't improve things at all?  If so, were you able to identify why
+     the intended fix didn't produce the desired benefit?
+
+     We found that a lot of the time was spent in the `coordinates_to_location` 
+     function so we tried optimizing this function. However, any speed improvement
+     was marginal at best. It turns out that the function itself was already
+     pretty fast, but it was being called way too many times.
+
+P3.  [4pts] How do you feel that your performance updates affected your code's
+     readability and maintainability?  Elaborate on your answer.
+
+     The code was made marginally more complicated (values are now cached instead
+     of recalcuated). This makes the code slightly less maintainable since the
+     logic is more complicated, but the code remains readable.
+
+P4.  [4pts] Did your performance updates cause any regressions in functionality?
+     If so, briefly describe any issues that emerged.  How were these issues
+     identified (e.g. automated test failures, manual testing, etc.)?  How
+     quickly were issues identified?
+
+     We did not notice any failed tests after performing this optimizations. Whether
+     this is becuause our optimizations are correct or our test coverage is incomplete
+     is yet to be seen :).
+
